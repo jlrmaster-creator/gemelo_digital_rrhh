@@ -15,7 +15,7 @@ import type { Level } from '@/domain/types';
  * pseudoaleatorio en navegadores sin soporte.
  */
 export const createId = (): string => {
-  const cryptoRef = globalThis.crypto as Crypto | undefined;
+  const cryptoRef = (globalThis as any).crypto as any | undefined;
   if (cryptoRef && typeof cryptoRef.randomUUID === 'function') {
     return cryptoRef.randomUUID();
   }
