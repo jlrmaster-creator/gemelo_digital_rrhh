@@ -1,0 +1,361 @@
+# Proyecto: Gemelo Digital del Talento
+## Prompt profesional para desarrollar una aplicación web open source
+
+### 1. Contexto y rol
+
+Actúa como desarrollador sénior full-stack, arquitecto de software y diseñador UX/UI, especializado en aplicaciones web progresivas, tecnologías open source, Firebase y soluciones digitales para Recursos Humanos.
+
+Desarrolla **Gemelo Digital del Talento**, una aplicación web que permita crear una representación digital del perfil profesional de una persona, visualizar sus competencias, registrar su evolución y explorar posibles itinerarios de desarrollo profesional.
+
+El objetivo es crear un MVP funcional, sencillo de utilizar, profesional, visualmente atractivo y fácil de mantener, que pueda evolucionar en el futuro sin necesidad de reconstruirlo desde cero.
+
+La aplicación no debe intentar predecir automáticamente el comportamiento humano ni sustituir las decisiones profesionales de las personas responsables de RR. HH.
+
+### 2. Objetivo del producto
+
+Crear un espacio digital en el que cada persona pueda consultar su perfil profesional y comprender:
+
+- Qué competencias tiene actualmente.
+- Qué fortalezas puede aportar a la organización.
+- Qué habilidades desea desarrollar.
+- Cómo evoluciona su perfil con el tiempo.
+- Qué competencias necesita para alcanzar sus objetivos profesionales.
+- Qué acciones concretas puede realizar para progresar.
+
+El gemelo digital debe funcionar como un **perfil profesional dinámico**, basado en datos explícitos, evaluaciones transparentes y objetivos definidos por la persona o acordados con su organización.
+
+### 3. Tecnologías obligatorias
+
+Utiliza tecnologías abiertas, conocidas y fáciles de mantener.
+
+**Frontend**
+- React.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- Una biblioteca de componentes o iconos ligera, si resulta necesaria.
+
+**Autenticación y datos**
+- Firebase Authentication para registrar e identificar usuarios.
+- Cloud Firestore como base de datos.
+- Firebase Security Rules para controlar el acceso a los datos.
+- SDK oficial de Firebase para JavaScript y TypeScript.
+
+**Visualización y documentos**
+- Recharts o una biblioteca equivalente para gráficos sencillos.
+- jsPDF para generar informes descargables en PDF.
+
+**Despliegue**
+- GitHub como repositorio de código fuente.
+- GitHub Actions para automatizar la compilación y publicación.
+- GitHub Pages como alojamiento de la aplicación estática.
+
+**Pruebas**
+- Vitest para las pruebas unitarias.
+- Firebase Emulator Suite para probar Firestore, Authentication y las reglas de seguridad cuando corresponda.
+
+No desarrollar un backend propio en la primera versión. No utilizar servidores propios, APIs de IA ni servicios externos innecesarios.
+
+### 4. Funcionalidades principales
+
+#### A. Registro, acceso y perfil personal
+
+Implementar un sistema sencillo de registro e inicio de sesión mediante Firebase Authentication.
+
+Funciones:
+- Registro e inicio de sesión.
+- Cierre de sesión.
+- Recuperación de contraseña, cuando se utilice un proveedor compatible.
+- Perfil profesional básico.
+- Nombre visible y puesto profesional opcional.
+- Fecha de creación y última actualización del perfil.
+- Acceso a los datos según los permisos asignados.
+
+No solicitar información personal que no sea necesaria para el funcionamiento de la aplicación.
+
+#### B. Creación del gemelo digital
+
+Cada persona dispondrá de su propio gemelo digital, que representará su perfil profesional actual.
+
+El perfil incluirá:
+
+- Datos profesionales básicos.
+- Competencias y habilidades.
+- Nivel actual de cada competencia.
+- Experiencia y conocimientos declarados.
+- Objetivos profesionales.
+- Intereses de desarrollo.
+- Historial de cambios relevantes.
+
+Los niveles de competencia deben utilizar una escala sencilla y comprensible, por ejemplo, de 1 a 5, con una descripción clara de cada nivel.
+
+Los datos iniciales se introducirán manualmente por la persona usuaria. No se utilizará IA para inferir información ni completar automáticamente su perfil.
+
+#### C. Mapa visual de competencias
+
+Mostrar las principales competencias mediante gráficos y elementos visuales fáciles de interpretar.
+
+Incluir:
+- Gráfico de competencias actuales.
+- Fortalezas principales.
+- Competencias que se desean mejorar.
+- Objetivos profesionales asociados.
+- Comparación entre el nivel actual y el nivel objetivo.
+
+El usuario debe poder consultar los datos que originan cada indicador y modificarlos cuando sea necesario.
+
+Los gráficos deben ser claros, accesibles y adaptables a dispositivos móviles.
+
+#### D. Evolución del gemelo digital
+
+Permitir que el perfil evolucione a lo largo del tiempo.
+
+Registrar cambios como:
+- Incorporación de una nueva competencia.
+- Actualización del nivel de una habilidad.
+- Finalización de una formación.
+- Cumplimiento de un objetivo.
+- Incorporación de una experiencia profesional relevante.
+
+Mostrar una línea temporal sencilla que permita comparar el estado actual del perfil con versiones anteriores.
+
+No sobrescribir innecesariamente el historial. Guardar únicamente los eventos de evolución relevantes para evitar complejidad y almacenamiento excesivo.
+
+#### E. Objetivos y plan de desarrollo
+
+Permitir que cada persona defina objetivos profesionales concretos.
+
+Cada objetivo debe incluir:
+- Título.
+- Descripción opcional.
+- Competencia relacionada.
+- Nivel actual.
+- Nivel objetivo.
+- Fecha prevista opcional.
+- Estado: pendiente, en curso o completado.
+- Acciones recomendadas desde un catálogo configurable.
+
+Las recomendaciones serán reglas sencillas o contenidos predefinidos. No deben generarse mediante IA.
+
+Ejemplo: si una persona desea mejorar su comunicación, puede registrar como acción participar en una presentación, practicar la comunicación escrita o completar una formación relacionada.
+
+#### F. Vista para Recursos Humanos
+
+Incorporar una vista profesional y limitada para usuarios autorizados de RR. HH.
+
+Permitir:
+- Consultar perfiles expresamente compartidos con la organización.
+- Visualizar competencias y objetivos compartidos.
+- Revisar la evolución profesional autorizada.
+- Consultar información agregada únicamente cuando exista una base de datos suficiente y permisos adecuados.
+
+No permitir que cualquier usuario de RR. HH. acceda automáticamente a todos los perfiles.
+
+No implementar decisiones automáticas de contratación, promoción, despido o evaluación del rendimiento basadas en puntuaciones del sistema.
+
+Si una función requiere una gestión organizativa más compleja, dejarla fuera del MVP.
+
+#### G. Informes PDF
+
+Generar informes directamente en el navegador.
+
+**Informe personal: «Mi Gemelo Digital»**
+
+Incluir:
+- Resumen del perfil.
+- Competencias actuales.
+- Fortalezas.
+- Objetivos profesionales.
+- Plan de desarrollo.
+- Evolución registrada.
+
+**Informe profesional compartido**
+
+Incluir únicamente los datos que la persona haya autorizado compartir y a los que el usuario solicitante tenga permiso de acceso.
+
+Los documentos deben tener un diseño profesional, con fecha de generación, gráficos sencillos y una estructura clara.
+
+No enviar los informes automáticamente por correo ni compartirlos públicamente.
+
+### 5. Modelo de datos en Firebase
+
+Utilizar Cloud Firestore como única base de datos remota.
+
+Diseñar una estructura simple, documentada y fácil de ampliar. Como punto de partida:
+
+- `users`: perfil básico y preferencias de la cuenta.
+- `digitalTwins`: información principal del gemelo digital.
+- `digitalTwins/{id}/competencies`: competencias del perfil.
+- `digitalTwins/{id}/goals`: objetivos profesionales.
+- `digitalTwins/{id}/history`: eventos de evolución.
+- `digitalTwins/{id}/sharing`: permisos explícitos de acceso, si se necesitan para la vista de RR. HH.
+
+Revisar y ajustar esta estructura para que las consultas sean eficientes y las reglas de seguridad sean verificables.
+
+No duplicar información sin necesidad. Definir identificadores estables, marcas de tiempo y validaciones para los datos importantes.
+
+### 6. Seguridad y privacidad
+
+La seguridad es un requisito fundamental del proyecto.
+
+Implementar:
+- Firebase Authentication para identificar usuarios.
+- Firestore Security Rules con denegación por defecto.
+- Reglas que comprueben la identidad y autorización de cada operación.
+- Validación de campos, tipos y estructura de documentos.
+- Separación entre datos privados y datos compartidos.
+- Permisos específicos para las funciones de RR. HH.
+- Protección frente a lecturas o modificaciones no autorizadas.
+- Pruebas de seguridad con Firebase Emulator Suite.
+
+No confiar exclusivamente en la ocultación de botones o pantallas del frontend para proteger información.
+
+No incluir claves privadas, contraseñas ni credenciales administrativas en el código fuente.
+
+La configuración pública necesaria para el SDK web de Firebase puede estar en el frontend, pero los permisos reales deben aplicarse en las reglas de seguridad.
+
+Aplicar los principios de minimización de datos, privacidad desde el diseño y cumplimiento del RGPD.
+
+Documentar cómo retirar permisos de acceso y cómo eliminar los datos de una persona.
+
+### 7. Diseño y experiencia de usuario
+
+La aplicación debe tener una apariencia moderna, profesional y amigable.
+
+Principios de diseño:
+- Enfoque mobile-first.
+- Navegación sencilla.
+- Panel personal claro.
+- Gráficos comprensibles.
+- Formularios breves.
+- Colores sobrios y consistentes.
+- Tipografía legible.
+- Accesibilidad y contraste adecuados.
+- Estados de carga, error, vacío y confirmación.
+- Confirmación antes de acciones destructivas.
+
+La pantalla principal debe permitir entender el estado del gemelo digital de un vistazo.
+
+Evitar interfaces sobrecargadas, gráficos innecesarios y funcionalidades que no aporten valor al MVP.
+
+### 8. Arquitectura y organización del código
+
+Mantener una arquitectura modular, pero sin introducir capas o patrones innecesarios.
+
+Separar:
+- Componentes visuales.
+- Páginas y navegación.
+- Autenticación.
+- Acceso a Firestore.
+- Tipos e interfaces TypeScript.
+- Lógica de competencias.
+- Gestión de objetivos.
+- Historial de evolución.
+- Generación de PDF.
+- Configuración y validación de formularios.
+
+Mantener la lógica de negocio fuera de los componentes visuales siempre que resulte razonable.
+
+Documentar las decisiones técnicas principales.
+
+### 9. Publicación en GitHub Pages
+
+El proyecto debe publicarse desde un repositorio de GitHub utilizando GitHub Actions.
+
+Requisitos:
+- Configurar correctamente `base` en Vite para la URL del repositorio.
+- Crear el workflow `.github/workflows/deploy.yml`.
+- Compilar la aplicación y publicar el contenido de `dist/`.
+- Configurar los permisos mínimos necesarios para el workflow.
+- Documentar cómo activar GitHub Pages.
+- Resolver correctamente la navegación de la aplicación en un alojamiento estático.
+- Verificar que Firebase Authentication admite el dominio de GitHub Pages utilizado.
+- Probar el acceso, la lectura y escritura de Firestore y la generación de PDF en el sitio publicado.
+
+No utilizar Firebase Hosting.
+
+No desplegar servidores ni procesos backend.
+
+No publicar datos de prueba reales ni información personal en el repositorio.
+
+### 10. Pruebas y calidad
+
+Incluir pruebas para:
+- Registro e inicio de sesión.
+- Creación y actualización del gemelo digital.
+- Gestión de competencias.
+- Creación y actualización de objetivos.
+- Registro de eventos de evolución.
+- Generación de informes PDF.
+- Acceso a perfiles propios.
+- Acceso a perfiles compartidos.
+- Bloqueo de operaciones no autorizadas.
+
+Probar las reglas de seguridad tanto para usuarios autenticados como para usuarios no autenticados y usuarios con distintos permisos.
+
+Incluir datos de demostración completamente ficticios.
+
+### 11. Alcance del MVP
+
+La primera versión debe incluir exclusivamente:
+
+1. Registro e inicio de sesión.
+2. Creación del gemelo digital personal.
+3. Gestión de competencias.
+4. Mapa visual de habilidades.
+5. Objetivos y plan de desarrollo.
+6. Historial básico de evolución.
+7. Generación de PDF personal.
+8. Compartición controlada de información, si puede implementarse de forma segura y sencilla.
+9. Firestore con reglas de seguridad verificadas.
+10. Publicación en GitHub Pages.
+
+No incluir en la primera versión:
+- Inteligencia artificial.
+- Predicción automática del rendimiento.
+- Simulaciones complejas de carrera profesional.
+- Integraciones con sistemas corporativos.
+- Nóminas, contratos o expedientes laborales.
+- Chat interno.
+- Notificaciones complejas.
+- Backend propio.
+- Analítica avanzada.
+
+### 12. Criterios de aceptación
+
+El proyecto estará terminado cuando:
+
+- Se pueda ejecutar localmente siguiendo el README.
+- Se pueda desplegar desde GitHub mediante GitHub Actions.
+- Una persona pueda registrarse e iniciar sesión.
+- Cada usuario pueda crear y actualizar su propio gemelo digital.
+- Las competencias y objetivos se guarden en Firestore.
+- Los gráficos reflejen los datos reales almacenados.
+- Se pueda consultar la evolución del perfil.
+- Se puedan descargar informes PDF.
+- Las reglas de seguridad impidan el acceso no autorizado a perfiles y datos.
+- La aplicación funcione en móvil y escritorio.
+- No dependa de IA ni de un backend propio.
+- El código y la documentación sean suficientes para que otro desarrollador pueda mantener el proyecto.
+
+### 13. Entregables
+
+Proporcionar:
+- Código fuente completo.
+- Estructura de carpetas.
+- Configuración de Firebase.
+- Reglas de seguridad de Firestore.
+- Pruebas unitarias y de seguridad.
+- Workflow de GitHub Actions.
+- Archivo README con instalación, configuración, pruebas y despliegue.
+- Instrucciones para configurar los proveedores de autenticación.
+- Instrucciones para activar GitHub Pages.
+- Lista de limitaciones conocidas.
+
+### Instrucción final
+
+Prioriza una aplicación funcional, sencilla, segura y profesional.
+
+No añadas complejidad que no sea necesaria para el MVP. Implementa primero el flujo completo de creación, visualización y evolución del gemelo digital.
+
+Antes de entregar el proyecto, comprueba que el código compila, que las reglas de seguridad están probadas y que la aplicación funciona en la URL pública de GitHub Pages.

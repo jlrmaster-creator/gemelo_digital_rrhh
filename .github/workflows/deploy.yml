@@ -1,0 +1,79 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permisos minimos: solo hace falta publicar en Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# No permite dos publicaciones simultaneas.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+        env:
+          # Publicacion en un proyecto de GitHub Pages: /<nombre-del-repo>/
+          # Para un dominio propio, deja BASE_PATH vacio o ponlo en "/".
+          BASE_PATH: ${{ vars.BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          # Configuracion publica del SDK web de Firebase.
+          # Se puede sobreescribir con "Settings > Secrets and variables >
+          # Actions > Variables" (repository variables).
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY || 'AIzaSyBBh8w7Dm1QMo89mRlKF6Etbm2nw47mhvY' }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN || 'gemelo-digital-rrhh.firebaseapp.com' }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID || 'gemelo-digital-rrhh' }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET || 'gemelo-digital-rrhh.firebasestorage.app' }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID || '926848094071' }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID || '1:926848094071:web:5a35426b5d8b811e2e1b72' }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        # Nota: este paso no puede activar Pages por si solo con GITHUB_TOKEN.
+        # La primera vez hay que activarlo a mano en
+        # Settings > Pages > Build and deployment > Source: GitHub Actions.
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

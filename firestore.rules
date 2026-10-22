@@ -1,0 +1,325 @@
+rules_version = '2';
+
+/**
+ * Reglas de seguridad de Cloud Firestore — Gemelo Digital del Talento.
+ *
+ * Principios:
+ * - Denegacion por defecto: todo lo que no se permite explicitamente se rechaza.
+ * - Cada operacion comprueba la identidad (request.auth) y la autorizacion.
+ * - Los datos son explicitos: nadie accede a un gemelo digital sin un permiso
+ *   creado por la propia persona duena.
+ * - El frontend nunca es la frontera de seguridad: estas reglas lo son.
+ *
+ * Modelo de permiso: cada permiso de comparticion es un documento
+ * `digitalTwins/{duenio}/sharing/{miembroUid}`. El identificador del documento
+ * es el uid de la persona a la que se concede acceso, de modo que la
+ * comprobacion es directa (`exists(...)`) y no requiere recorrer listas.
+ *
+ * Modelo de organizacion: la pertenencia a una organizacion se registra en
+ * `organizations/{orgId}/members/{uid}`. Un solo documento por persona es la
+ * unica fuente de verdad: las reglas no necesitan recorrer arrays y cada
+ * miembro puede comprobar su rol sin leer el resto de la organizacion.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Funciones auxiliares
+    // ---------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    /** La persona autenticada pertenece a la organizacion. */
+    function isOrgMember(orgId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+    }
+
+    /** Persona administradora de una organizacion. */
+    function isOrgAdmin(orgId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /** El codigo de invitacion existe y corresponde a esa organizacion. */
+    function isValidInvite(orgId, code) {
+      return isSignedIn()
+        && code is string
+        && code.size() > 0
+        && exists(/databases/$(database)/documents/invites/$(code))
+        && get(/databases/$(database)/documents/invites/$(code)).data.orgId == orgId;
+    }
+
+    /** Permiso activo de la persona autenticada sobre un gemelo digital. */
+    function hasActiveGrant(twinId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/digitalTwins/$(twinId)/sharing/$(request.auth.uid))
+        && get(/databases/$(database)/documents/digitalTwins/$(twinId)/sharing/$(request.auth.uid)).data.revokedAt == null;
+    }
+
+    /** Permiso activo con alcance completo (incluye la evolucion). */
+    function hasFullGrant(twinId) {
+      return hasActiveGrant(twinId)
+        && get(/databases/$(database)/documents/digitalTwins/$(twinId)/sharing/$(request.auth.uid)).data.scope == 'full';
+    }
+
+    // ---------------------------------------------------------------------
+    // Validadores de contenido
+    // ---------------------------------------------------------------------
+
+    function isValidLevel(value) {
+      return value is int && value >= 1 && value <= 5;
+    }
+
+    function isShortText(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    // ---------------------------------------------------------------------
+    // users/{uid} — perfil basico de la cuenta
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      // El dueno y las personas con permiso activo sobre su gemelo.
+      allow read: if isOwner(uid) || hasActiveGrant(uid);
+
+      allow create, update: if isOwner(uid)
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 120
+        && request.resource.data.jobTitle is string
+        && request.resource.data.jobTitle.size() <= 120;
+
+      allow delete: if isOwner(uid);
+    }
+
+    // ---------------------------------------------------------------------
+    // digitalTwins/{twinId} — gemelo digital
+    // ---------------------------------------------------------------------
+    match /digitalTwins/{twinId} {
+      allow read: if isOwner(twinId) || hasActiveGrant(twinId);
+
+      allow create, update: if isOwner(twinId)
+        && request.resource.data.userId == twinId
+        && request.resource.data.headline is string
+        && request.resource.data.headline.size() <= 140
+        && request.resource.data.summary is string
+        && request.resource.data.summary.size() <= 2000;
+
+      allow delete: if isOwner(twinId);
+
+      // ---------------------------------------------------------------
+      // Competencias
+      // ---------------------------------------------------------------
+      match /competencies/{competencyId} {
+        allow read: if isOwner(twinId) || hasActiveGrant(twinId);
+
+        allow create, update: if isOwner(twinId)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 1
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.category is string
+          && request.resource.data.category.size() <= 80
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 1000
+          && isValidLevel(request.resource.data.level);
+
+        allow delete: if isOwner(twinId);
+      }
+
+      // ---------------------------------------------------------------
+      // Objetivos profesionales y plan de desarrollo
+      // ---------------------------------------------------------------
+      match /goals/{goalId} {
+        allow read: if isOwner(twinId) || hasActiveGrant(twinId);
+
+        allow create, update: if isOwner(twinId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 2
+          && request.resource.data.title.size() <= 140
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 1000
+          && request.resource.data.competencyName is string
+          && request.resource.data.competencyName.size() <= 120
+          && isValidLevel(request.resource.data.currentLevel)
+          && isValidLevel(request.resource.data.targetLevel)
+          && request.resource.data.targetLevel >= request.resource.data.currentLevel
+          && request.resource.data.targetDate is string
+          && request.resource.data.targetDate.size() <= 20
+          && request.resource.data.status in ['pending', 'in_progress', 'completed']
+          && request.resource.data.actions is list
+          && request.resource.data.actions.size() <= 50;
+
+        allow delete: if isOwner(twinId);
+      }
+
+      // ---------------------------------------------------------------
+      // Historial de evolucion
+      // ---------------------------------------------------------------
+      match /history/{eventId} {
+        // El historial solo se comparte con alcance completo.
+        allow read: if isOwner(twinId) || hasFullGrant(twinId);
+
+        allow create, update: if isOwner(twinId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 2
+          && request.resource.data.title.size() <= 160
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 1000
+          && request.resource.data.competencyName is string
+          && request.resource.data.competencyName.size() <= 120
+          && request.resource.data.type in [
+            'competency_added', 'level_updated', 'training_completed', 'goal_completed',
+            'experience_added', 'goal_created', 'goal_updated', 'note'
+          ];
+
+        allow delete: if isOwner(twinId);
+      }
+
+      // ---------------------------------------------------------------
+      // Permisos de acceso (comparticion explicita)
+      //
+      // El identificador del documento es el uid de la persona a la que se
+      // concede el permiso, por lo que la comprobacion no necesita leer los
+      // datos del documento (y funciona tambien en consultas de listado).
+      // ---------------------------------------------------------------
+      match /sharing/{memberUid} {
+        // El dueno ve todos sus permisos; cada miembro ve el suyo.
+        allow read: if isOwner(twinId)
+          || (isSignedIn() && memberUid == request.auth.uid);
+
+        // Solo el dueno puede conceder o renovar permisos.
+        allow create, update: if isOwner(twinId)
+          && request.resource.data.memberUid == memberUid
+          && request.resource.data.twinId == twinId
+          && request.resource.data.orgId is string
+          && request.resource.data.orgName is string
+          && request.resource.data.orgName.size() <= 120
+          && request.resource.data.scope in ['full', 'summary'];
+
+        allow delete: if isOwner(twinId);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // organizations/{orgId} — equipos de RR. HH.
+    // ---------------------------------------------------------------------
+    match /organizations/{orgId} {
+      // Solo las personas de la organizacion pueden leerla.
+      allow read: if isOrgMember(orgId);
+
+      // Quien crea la organizacion es su primera administradora.
+      allow create: if isSignedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 2
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() > 0
+        && request.resource.data.inviteCode.size() <= 32;
+
+      // Solo una administradora puede modificar la organizacion, y no puede
+      // cambiar quien la creo.
+      allow update: if isOrgAdmin(orgId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 2
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.createdBy == resource.data.createdBy;
+
+      allow delete: if isOrgAdmin(orgId);
+
+      // ---------------------------------------------------------------
+      // Miembros de la organizacion
+      //
+      // Un documento por persona: es la unica fuente de verdad sobre la
+      // pertenencia y el rol, y evita mantener listas que las reglas no
+      // pueden recorrer de forma segura.
+      // ---------------------------------------------------------------
+      match /members/{memberUid} {
+        // Los miembros pueden consultarse entre si.
+        allow read: if isOrgMember(orgId);
+
+        allow create: if isSignedIn()
+          && request.resource.data.uid == memberUid
+          && request.resource.data.role in ['admin', 'hr']
+          && request.resource.data.orgName is string
+          && request.resource.data.orgName.size() > 0
+          && request.resource.data.orgName.size() <= 120
+          && (
+            // La administradora fundadora crea su propio registro.
+            (
+              request.auth.uid == memberUid
+              && request.resource.data.role == 'admin'
+              && get(/databases/$(database)/documents/organizations/$(orgId)).data.createdBy == request.auth.uid
+            )
+            ||
+            // Incorporacion con codigo de invitacion valido.
+            (
+              request.resource.data.role == 'hr'
+              && request.resource.data.inviteCode is string
+              && isValidInvite(orgId, request.resource.data.inviteCode)
+            )
+          );
+
+        // Una administradora gestiona a los demas, pero no a si misma.
+        allow update: if isOrgAdmin(orgId)
+          && memberUid != request.auth.uid
+          && request.resource.data.uid == memberUid
+          && request.resource.data.role in ['admin', 'hr'];
+
+        allow delete: if isOrgAdmin(orgId) && memberUid != request.auth.uid;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // invites/{code} — codigos de incorporacion a una organizacion
+    //
+    // El codigo funciona como credencial de un solo uso que la persona
+    // administradora comparte fuera de banda. Solo lo lee una persona
+    // autenticada y el documento no contiene datos personales.
+    // ---------------------------------------------------------------------
+    match /invites/{code} {
+      allow read: if isSignedIn();
+
+      allow create, update: if isOrgAdmin(request.resource.data.orgId)
+        && request.resource.data.code == code
+        && request.resource.data.orgId is string
+        && request.resource.data.orgName is string
+        && request.resource.data.orgName.size() <= 120;
+
+      allow delete: if isSignedIn() && isOrgAdmin(resource.data.orgId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Consultas de grupo de colecciones
+    //
+    // Firestore solo evalua reglas con comodin recursivo ({path=**}) en las
+    // consultas de "collection group". Estas reglas permiten a cada persona
+    // listar unicamente sus propios permisos (`sharing`) y sus propias
+    // organizaciones (`members`), sin abrir el acceso al resto de documentos.
+    //
+    // En este contexto el identificador del documento no se puede leer del
+    // comodin, por lo que la comprobacion se hace sobre el dato `memberUid` /
+    // `uid`, que el propio cliente escribe siempre con el mismo valor que el
+    // identificador del documento.
+    // ---------------------------------------------------------------------
+    match /{path=**}/sharing/{memberUid} {
+      allow read: if isSignedIn() && resource.data.memberUid == request.auth.uid;
+    }
+
+    match /{path=**}/members/{memberUid} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Cualquier otra ruta queda denegada.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
